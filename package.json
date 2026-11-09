@@ -11,7 +11,8 @@
   "dependencies": {
     "next": "^15.5.0",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@upstash/redis": "^1.35.3"
   },
   "devDependencies": {}
 }
