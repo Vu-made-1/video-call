@@ -15,7 +15,7 @@
 .error, .call-error { color: #f1a08f; font-size: 12px; }
 .call-error { position: fixed; right: 24px; bottom: 86px; padding: 11px 15px; border: 1px solid #693e42; border-radius: 8px; background: #321f29; }
 .live-local video, .remote-video video { width: 100%; height: 100%; display: block; object-fit: cover; background: #191d2a; }
-.live-local video, .remote-video video { transform: scaleX(-1); }
+.live-local video { transform: scaleX(-1); }
 .waiting-tile { min-height: 205px; border: 1px dashed #3b4355; border-radius: 16px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 9px; color: #b8bfcc; background: #171c29; }
 .waiting-icon { color: #ef8066; font-size: 36px; line-height: 1; }
 .waiting-tile b { font-size: 14px; }.waiting-tile span { color: #7d8799; font-size: 11px; }.waiting-tile strong { color: #d1d6e0; }

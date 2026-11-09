@@ -55,6 +55,8 @@ export default function CallPage() {
   const [error, setError] = useState('')
   const localVideoRef = useRef(null)
   const localStreamRef = useRef(null)
+  const outboundStreamRef = useRef(null)
+  const mirrorAnimationRef = useRef(null)
   const peerConnections = useRef(new Map())
   const peerNames = useRef(new Map())
   const peerId = useRef(createPeerId())
@@ -72,7 +74,8 @@ export default function CallPage() {
     const existing = peerConnections.current.get(remoteId)
     if (existing) return existing
     const connection = new RTCPeerConnection({ iceServers: ICE_SERVERS })
-    localStreamRef.current?.getTracks().forEach((track) => connection.addTrack(track, localStreamRef.current))
+    const stream = outboundStreamRef.current || localStreamRef.current
+    stream?.getTracks().forEach((track) => connection.addTrack(track, stream))
     connection.onicecandidate = ({ candidate }) => {
       if (candidate) signal('candidate', remoteId, candidate.toJSON())
     }
@@ -147,8 +150,38 @@ export default function CallPage() {
 
   useEffect(() => () => {
     localStreamRef.current?.getTracks().forEach((track) => track.stop())
+    outboundStreamRef.current?.getVideoTracks().forEach((track) => track.stop())
+    if (mirrorAnimationRef.current) cancelAnimationFrame(mirrorAnimationRef.current)
     peerConnections.current.forEach((connection) => connection.close())
   }, [])
+
+  const createMirroredStream = async (stream) => {
+    if (typeof document === 'undefined' || typeof HTMLCanvasElement === 'undefined') return stream
+    const canvas = document.createElement('canvas')
+    canvas.width = 640
+    canvas.height = 480
+    const context = canvas.getContext('2d')
+    if (!context || typeof canvas.captureStream !== 'function') return stream
+
+    const source = document.createElement('video')
+    source.muted = true
+    source.playsInline = true
+    source.srcObject = stream
+    await source.play()
+    const draw = () => {
+      context.save()
+      context.clearRect(0, 0, canvas.width, canvas.height)
+      context.translate(canvas.width, 0)
+      context.scale(-1, 1)
+      context.drawImage(source, 0, 0, canvas.width, canvas.height)
+      context.restore()
+      mirrorAnimationRef.current = requestAnimationFrame(draw)
+    }
+    draw()
+    const mirrored = canvas.captureStream(30)
+    stream.getAudioTracks().forEach((track) => mirrored.addTrack(track))
+    return mirrored
+  }
 
   const joinRoom = async (event) => {
     event.preventDefault()
@@ -159,6 +192,7 @@ export default function CallPage() {
       }
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       localStreamRef.current = stream
+      outboundStreamRef.current = await createMirroredStream(stream)
       setJoined(true)
     } catch (reason) {
       if (reason?.message === 'secure-context') {
